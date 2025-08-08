@@ -2,50 +2,34 @@ version: '3.9'
 
 services:
   n8n:
-    container_name: n8n_whatsapp
     image: n8nio/n8n:1.103.2
     restart: always
-    ports:
-      - "5678:5678"
-    env_file:
-      - ./n8n.env
+    environment:
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: evolutionapi_db
+      DB_POSTGRESDB_USER: evolutionuser
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - n8n_data:/home/node/.n8n
+      - ./n8n_data:/home/node/.n8n
     depends_on:
       - postgres
-    networks:
-      - whatsapp-net
 
   evolution_api:
-    container_name: evolution_api
     image: atendai/evolution-api:v2.1.1
     restart: always
-    ports:
-      - "8080:8080"
-    env_file:
-      - ./evolution_api.env
-    volumes:
-      - evolution_store:/evolution/store
-      - evolution_instances:/evolution/instances
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_NAME: evolutionapi_db
+      DATABASE_USER: evolutionuser
+      DATABASE_PASS: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
     depends_on:
       - postgres
       - redis
-    networks:
-      - whatsapp-net
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 2048M
-        reservations:
-          cpus: '0.5'
-          memory: 1024M
-    sysctls:
-      net.core.somaxconn: 65535
-      net.ipv4.tcp_max_syn_backlog: 65535
 
   postgres:
-    container_name: whatsapp_postgres
     image: postgres:16
     restart: always
     environment:
@@ -54,21 +38,10 @@ services:
       POSTGRES_PASSWORD: P0stgr3s_S3cur3_P@ssw0rd!
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-    networks:
-      - whatsapp-net
 
   redis:
-    container_name: whatsapp_redis
     image: redis:7-alpine
     restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 1s
-      timeout: 3s
-      retries: 5
-    networks:
-      - whatsapp-net
 
 volumes:
   n8n_data:
