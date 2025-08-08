@@ -1,0 +1,5 @@
+{
+  "deployments": {
+    "rootDirectory": "docker/"
+  }
+}
